@@ -5,6 +5,8 @@ self.onmessage=async({data})=>{
   if(data.type==='load') {
    const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.2');
    env.allowLocalModels=false;
+   // Single thread does not require cross-origin isolation on static Pages.
+   env.backends.onnx.wasm.numThreads=1;
    generator=await pipeline('text-generation','HuggingFaceTB/SmolLM2-1.7B-Instruct',{
     revision:data.revision, dtype:'q4', device:data.device,
     progress_callback:p=>self.postMessage({type:'progress',text:`${p.status} ${p.file||''} ${p.progress?Math.round(p.progress)+'%':''}`})});

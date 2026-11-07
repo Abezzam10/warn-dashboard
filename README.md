@@ -112,3 +112,9 @@ SmolLM2 worker code remains in the repo for further development, but no
 successful inference or device-compatibility claim is made. Suggested queries
 remain visibly deterministic. News fetching is disabled by default after a
 rate-limit response. There is no automatic retry against that restriction.
+
+Further bounded browser experiments: 135M on single-thread WASM produced real
+responses but failed both structured-query tests. 360M on WASM crashed during
+initialization. See [actual model test results](docs/browser-model-tests.md).
+Adapter detection is corrected, but no model has passed both runtime and query
+contract verification, so free-form AI remains disabled.
