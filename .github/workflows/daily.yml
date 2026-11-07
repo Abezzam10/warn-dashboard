@@ -1,0 +1,64 @@
+name: daily-data-pipeline
+on:
+  schedule:
+    - cron: "23 6 * * *"   # daily; GitHub may delay scheduled runs
+  push:
+    branches: [main]
+    paths: ["web/**", "ingest/**", "tests/**", ".github/workflows/**", "package.json"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # commit refreshed data
+  pages: write      # deploy the static site
+  id-token: write   # Pages OIDC deployment
+
+concurrency:
+  group: warn-pages
+  cancel-in-progress: true
+
+jobs:
+  pipeline-and-deploy:
+    runs-on: ubuntu-latest   # standard runner: free for public repos
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run data pipeline (stdlib only)
+        run: python ingest/run_all.py
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Query engine tests
+        run: node --test tests/*.test.mjs
+      - name: Contract tests gate publishing
+        run: python -m unittest discover -s tests -v
+      - uses: actions/upload-artifact@v4
+        with:
+          name: warn-input-snapshot-${{ github.run_id }}
+          path: data/snapshots/
+          retention-days: 7
+      - name: Commit refreshed data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/*.json
+          git diff --cached --quiet || git commit -m "data: daily pipeline refresh"
+          git push
+      - name: Package static site
+        run: |
+          mkdir -p _site/data
+          cp -r web/* _site/
+          cp data/notices.json data/series.json data/forecasts.json data/news.json data/meta.json _site/data/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
