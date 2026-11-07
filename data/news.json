@@ -1,1 +1,1 @@
-{"schema_version":1,"matched_at":"2026-11-07T17:08:17.578896+00:00","method":"GDELT DOC API, employer name + layoff terms, 6-month window; approximate","articles":[],"errors":["Tyson Foods: URLError"]}
+{"schema_version":1,"matched_at":null,"method":"Disabled after rate-limit response; no retries. Enable GDELT_ENABLED only after access is cleared.","articles":[],"errors":["News source unavailable; rate-limit encountered during prototype verification"]}
