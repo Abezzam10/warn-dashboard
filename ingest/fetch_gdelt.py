@@ -4,7 +4,7 @@ Metadata only (title, url, domain, date) - article text is never copied.
 Matching is employer-name + recent window and is labeled approximate.
 GDELT datasets are free of fee per https://www.gdeltproject.org/about.html.
 """
-import sys, time, json, datetime, urllib.parse
+import sys, time, json, datetime, urllib.parse, os
 from common import DATA, dump_json, load_json, fetch_json
 
 MAX_EMPLOYERS = 4
@@ -12,6 +12,10 @@ MAX_ARTICLES = 5
 
 
 def main():
+    if os.environ.get("GDELT_ENABLED") != "1":
+        dump_json({"matched_at": None, "method": "Disabled after rate-limit response; no retries. Enable GDELT_ENABLED only after access is cleared.", "articles": [], "errors": ["News source unavailable; rate-limit encountered during prototype verification"]}, DATA / "intermediate" / "gdelt.json")
+        print("GDELT disabled after rate-limit; no request sent")
+        return 0
     validated = load_json(DATA / "intermediate" / "validated.json", {})
     notices = validated.get("notices", [])
     cutoff = (datetime.date.today() - datetime.timedelta(days=120)).isoformat()

@@ -103,3 +103,12 @@ model requests before opt-in. A bounded 65-second q4 load reached 83% of
 the model file download; end-to-end local inference is NOT yet verified.
 NUL bytes in the WARN CSV are removed and counted. Possible duplicates
 include employer, state, location, chosen date and count; all rows remain.
+
+### Final model verification result
+
+A longer real Chrome browser test crashed during q4 initialization/loading.
+Free-form AI is therefore disabled in the visible prototype. The pinned real
+SmolLM2 worker code remains in the repo for further development, but no
+successful inference or device-compatibility claim is made. Suggested queries
+remain visibly deterministic. News fetching is disabled by default after a
+rate-limit response. There is no automatic retry against that restriction.
