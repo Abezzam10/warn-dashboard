@@ -76,8 +76,9 @@ python -m http.server --directory _site 8000
 
 County, industry and individual visa metrics are unavailable. Current forward
 forecasts are withheld. Local AI code is experimental; see the runtime test
-notes for what was actually tested. Suggested questions are deterministic, not
-a disguised model. No historical ALFRED feature join or H-1B employer join is
+notes for what was actually tested. Suggested questions and typed-question parsing are deterministic
+keyword matching, not a disguised model; the interpreted query is shown beside
+each answer. No historical ALFRED feature join or H-1B employer join is
 implemented. Raw snapshots are archived as short-lived Action artifacts, not
 claimed as historical vintages.
 

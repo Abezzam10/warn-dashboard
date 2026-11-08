@@ -1,6 +1,14 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {validateSpec,compute,unsupported} from '../web/chat.js';
+import test from 'node:test';import assert from 'node:assert/strict';import {validateSpec,compute,unsupported,parseQuestion} from '../web/chat.js';
 const rows=[{id:'1',employer:'Example',state:'NY',notice_date:'2025-03-01',workers_announced:10,workers_missing:false},{id:'2',employer:'Other',state:'CA',notice_date:'2025-04-01',workers_announced:null,workers_missing:true}];
 test('computes only matching rows and actual headcounts',()=>{const r=compute(rows,{metric:'workers_announced_sum',filters:{state:'NY'}});assert.equal(r.workers,10);assert.equal(r.count,1);});
 test('rejects arbitrary fields, code, invalid filters and dates',()=>{for(const q of [{metric:'eval'},{metric:'notice_count',code:'alert(1)'},{metric:'notice_count',filters:{industry:'tech'}},{metric:'notice_count',time_range:{start:'tomorrow'}},{metric:'notice_count',filters:{county:'Kings'}}]) assert.throws(()=>validateSpec(q));});
 test('visa questions unknown',()=>assert(unsupported('How many H-1B workers were laid off?')));
 test('missing counts never treated as known',()=>{const r=compute(rows,{metric:'notice_count'});assert.equal(r.missing,1);assert.equal(r.workers,10);});
+test('typed question: state and explicit year parse deterministically',()=>{const p=parseQuestion('How many notices were issued in New York in 2025?');assert.equal(p.spec.metric,'notice_count');assert.deepEqual(p.spec.filters,{state:'NY'});assert.deepEqual(p.spec.time_range,{start:'2025-01-01',end:'2025-12-31'});});
+test('typed question: employer, workers metric, state',()=>{const p=parseQuestion('How many workers did Amazon announce in Texas in 2025?');assert.equal(p.spec.metric,'workers_announced_sum');assert.deepEqual(p.spec.filters,{employer:'Amazon',state:'TX'});});
+test('typed question: top employers',()=>{const p=parseQuestion('top employers, all dates');assert.equal(p.spec.metric,'top_employers');assert.equal(p.spec.group_by,'employer');});
+test('typed question: month range',()=>{const p=parseQuestion('notices from March 2025 to June 2025');assert.deepEqual(p.spec.time_range,{start:'2025-03-01',end:'2025-06-30'});});
+test('typed question: relative time abstains',()=>assert.equal(parseQuestion('layoffs last year').spec,undefined));
+test('typed question: unrelated text abstains',()=>assert.equal(parseQuestion('what is the meaning of life').spec,undefined));
+test('typed question: history without employer abstains',()=>assert.equal(parseQuestion('show me the history').spec,undefined));
+test('typed questions always produce valid specs',()=>{for(const q of ['monthly trend in California','top employers in 2024','notices in NY','how many notices','Amazon layoffs','workers announced by Tesla since 2024','forecast 2026','which employers had the most notices in 2025']){const p=parseQuestion(q);assert(p.spec,'expected spec for: '+q);validateSpec(p.spec);}});
