@@ -1,5 +1,10 @@
 """California WARN small-batch change detection, Aug-Oct 2026.
 
+Change detection uses a FIXED 24-month reference window (Jul 2024-Jun 2026) -
+the same window for all three target months, not a rolling per-month trailing
+window. The |z| > 2 flag is an exploratory heuristic cutoff chosen for
+resistance to one-off heavy months; no calibrated false-alarm rate is claimed.
+
 Data policy (verified, not assumed):
 - All monthly series are county-level rows from official California EDD reports only:
   the current WARN XLSX (processed 07/01/26-11/04/26) and EDD's published prior-year

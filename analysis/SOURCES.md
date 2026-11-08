@@ -32,20 +32,22 @@ the XLSX at /tmp/ca_warn.xlsx; the feed clone at /tmp/warn-dashboard (T-T2/T-T4 
 ## Units policy (evidence-based)
 - Monthly counts and employee totals are county-level ROW sums on every side, so
   baselines and targets are the same unit. EDD files one row per site/county.
-- 23 of 420 filings have rows in multiple counties. Addresses were checked for all 23:
-  every group covers distinct sites, so identical headcounts (Dreyer's Bakersfield 221
-  vs Tulare 221; Kaiser San Rafael/Corona/Folsom 1 each) are distinct sites, NOT repeated
+- 23 of 420 filings have rows in multiple county rows. In 22 of 23 the rows have
+  distinct site addresses, so identical headcounts (Dreyer's Bakersfield 221 vs
+  Tulare 221; Kaiser San Rafael/Corona/Folsom 1 each) are distinct sites, NOT repeated
   totals. An earlier draft that collapsed them was wrong and was corrected.
-- One ambiguous pair remains: John Muir Health, 2540 East Street, identical rows except
-  15 vs 3 employees (same site, dates, type, processed date). Counted as reported (18);
-  a 3-position uncertainty in August, labeled on the page.
+- The 23rd is the ambiguous pair: John Muir Health, 2540 East Street, identical rows
+  except 15 vs 3 employees (same site, dates, type, processed date). Counted as
+  reported (18); a 3-position uncertainty in August, labeled on the page.
 - Distinct-filing counts (130/125/101 rows = 122/115/89 filings for Aug/Sep/Oct) are
   shown for context; no employee figure uses filing-level dedup.
 
 ## Method
-Baseline: median of trailing 24 months (Jul 2024-Jun 2026, official rows).
-Robust z = (month - median) / (1.4826 * MAD); flag |z| > 2 (standard median-based
-outlier cutoff, resistant to one-off heavy months). MAD = 0 handled explicitly:
+Baseline: median of a FIXED 24-month reference window (Jul 2024-Jun 2026, official
+rows) - the same window for all three target months, not a rolling trailing window.
+Robust z = (month - median) / (1.4826 * MAD); flag |z| > 2 - an exploratory heuristic
+cutoff chosen for resistance to one-off heavy months; no calibrated false-alarm rate
+is claimed or validated. MAD = 0 handled explicitly:
 z = 0 when the month equals the median, signed infinity otherwise (never silently 0).
 Baselines: notices median 116, MAD 25; employees median 6,445, MAD 1,591.
 Seasonal cross-check: same month in 2023/2024/2025.
