@@ -184,7 +184,8 @@
     73,
     114
    ],
-   "seasonal_median": 114
+   "seasonal_median": 114,
+   "distinct_filings": 122
   },
   "2026-09": {
    "rows": 125,
@@ -204,7 +205,8 @@
     91,
     103
    ],
-   "seasonal_median": 98
+   "seasonal_median": 98,
+   "distinct_filings": 115
   },
   "2026-10": {
    "rows": 101,
@@ -224,7 +226,8 @@
     143,
     273
    ],
-   "seasonal_median": 143
+   "seasonal_median": 143,
+   "distinct_filings": 89
   }
  },
  "lag": {
@@ -232,5 +235,19 @@
   "median": 61.0,
   "p25": 59,
   "p75": 63
- }
+ },
+ "october_top": [
+  {
+   "company": "AEG Management Oakland LLC",
+   "employees": 1605
+  },
+  {
+   "company": "Dreyer's Grand Ice Cream",
+   "employees": 1543
+  },
+  {
+   "company": "24Hr Homecare",
+   "employees": 875
+  }
+ ]
 }

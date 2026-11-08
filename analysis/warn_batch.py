@@ -126,5 +126,22 @@ if __name__ == '__main__':
         print(t, series[t], f'z_rows={z_r:.2f} z_emps={z_e:.2f} seasonal={same}')
     res['lag'] = lag_stats(edd)
     print('lag:', res['lag'])
+    # Distinct filings per target month (context only; employee figures stay row sums)
+    filings_by_month = collections.Counter()
+    for (comp, notice, eff) in g:
+        if notice: filings_by_month[notice[:7]] += 1
+    for t in res['targets']:
+        res['targets'][t]['distinct_filings'] = filings_by_month[t]
+    # October concentration: top employers by announced employees (plain row sums)
+    oct_by_company = collections.defaultdict(int)
+    for r in edd:
+        if r['notice'] and r['notice'][:7] == '2026-10' and isinstance(r['employees'], (int, float)):
+            oct_by_company[r['company']] += r['employees']
+    res['october_top'] = [{'company': c, 'employees': e}
+                          for c, e in sorted(oct_by_company.items(), key=lambda kv: -kv[1])[:3]]
+    print('distinct filings:', {t: filings_by_month[t] for t in res['targets']})
+    print('october top:', res['october_top'])
+    import os
+    os.makedirs('/tmp/ca_analysis', exist_ok=True)
     json.dump(res, open('/tmp/ca_analysis/results_final.json', 'w'), indent=1)
     print('wrote /tmp/ca_analysis/results_final.json')

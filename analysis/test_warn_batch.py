@@ -77,7 +77,7 @@ check('T-ZEROMAD value==median gives z=0', z0 == 0.0)
 check('T-ZEROMAD value>median gives z=+inf (flags, never silently 0)', zi == math.inf)
 check('T-ZEROMAD value<median gives z=-inf', zn == -math.inf)
 
-# T-BASELINE: official trailing-24-month baselines and z values
+# T-BASELINE: official fixed 24-month reference window (Jul2024-Jun2026) and z values
 allm = sorted(m for m in series if '2024-07' <= m <= '2026-06')
 check('T-BASELINE exactly 24 baseline months Jul2024-Jun2026', len(allm) == 24 and allm[0] == '2024-07' and allm[-1] == '2026-06')
 exp_z = {'2026-08': (0.38, -0.54), '2026-09': (0.24, 0.14), '2026-10': (-0.40, 1.43)}
@@ -87,6 +87,28 @@ for t, (zr, ze) in exp_z.items():
     check(f'T-BASELINE {t} z_rows={zr} z_emps={ze}', round(z_r, 2) == zr and round(z_e, 2) == ze,
           f'got {z_r:.2f}/{z_e:.2f} baselines rows {med}/{mad} emps {mede}/{made}')
     check(f'T-BASELINE {t} no flag crossed', abs(z_r) <= 2 and abs(z_e) <= 2)
+
+# T-DISTINCT: distinct-filing counts per target month (context figures only)
+fm = collections.Counter()
+for (comp, notice, eff) in g:
+    if notice: fm[notice[:7]] += 1
+check('T-DISTINCT Aug/Sep/Oct filings 122/115/89',
+      (fm['2026-08'], fm['2026-09'], fm['2026-10']) == (122, 115, 89),
+      f"got {(fm['2026-08'], fm['2026-09'], fm['2026-10'])}")
+check('T-DISTINCT filings never exceed rows per month',
+      all(fm[m] <= series[m][0] for m in ('2026-08', '2026-09', '2026-10')))
+
+# T-OCTTOP: October concentration figures (plain row sums per company)
+oct_by = collections.defaultdict(int)
+for r in edd:
+    if r['notice'] and r['notice'][:7] == '2026-10' and isinstance(r['employees'], (int, float)):
+        oct_by[r['company']] += r['employees']
+top = sorted(oct_by.items(), key=lambda kv: -kv[1])
+check('T-OCTTOP AEG 1605 then Dreyer 1543',
+      top[0] == ('AEG Management Oakland LLC', 1605) and top[1] == ("Dreyer's Grand Ice Cream", 1543),
+      f'got {top[:2]}')
+share = (top[0][1] + top[1][1]) / series['2026-10'][1]
+check('T-OCTTOP top-2 share about 32% (30-35% guard)', 0.30 < share < 0.35, f'got {share:.3f}')
 
 # T-T2: overlap reconciliation EDD vs feed snapshot (feed only a cross-check)
 d = json.load(open('/tmp/warn-dashboard/data/notices.json'))

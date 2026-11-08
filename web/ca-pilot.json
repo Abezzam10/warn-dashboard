@@ -1,0 +1,210 @@
+{
+ "schema_version": 1,
+ "title": "California small-batch pilot, August to October 2026",
+ "source": {
+  "name": "California EDD WARN reports (official)",
+  "url": "https://edd.ca.gov/en/jobs_and_Training/Layoff_Services_WARN",
+  "retrieved": "2026-11-08",
+  "data_through": "2026-11-04",
+  "note": "Current WARN XLSX (processed 1 Jul to 4 Nov 2026) plus EDD prior-year PDF archives, FY 2023-24 through FY 2025-26. The public feed is used only as a cross-check."
+ },
+ "freshness": "Official California EDD data through 4 Nov 2026, retrieved 8 Nov 2026. The public feed's newest snapshot is 25 Sep 2026, about six weeks behind.",
+ "reference_window": {
+  "start": "2024-07",
+  "end": "2026-06",
+  "notices_median": 116.0,
+  "notices_mad": 25.0,
+  "employees_median": 6444.5,
+  "employees_mad": 1590.5
+ },
+ "series": {
+  "2024-07": [
+   106,
+   5456
+  ],
+  "2024-08": [
+   73,
+   4980
+  ],
+  "2024-09": [
+   91,
+   7825
+  ],
+  "2024-10": [
+   143,
+   8519
+  ],
+  "2024-11": [
+   241,
+   9278
+  ],
+  "2024-12": [
+   57,
+   2588
+  ],
+  "2025-01": [
+   106,
+   6560
+  ],
+  "2025-02": [
+   174,
+   8443
+  ],
+  "2025-03": [
+   98,
+   5635
+  ],
+  "2025-04": [
+   197,
+   6571
+  ],
+  "2025-05": [
+   118,
+   22372
+  ],
+  "2025-06": [
+   109,
+   5974
+  ],
+  "2025-07": [
+   173,
+   7710
+  ],
+  "2025-08": [
+   114,
+   6102
+  ],
+  "2025-09": [
+   103,
+   6442
+  ],
+  "2025-10": [
+   273,
+   13452
+  ],
+  "2025-11": [
+   85,
+   3398
+  ],
+  "2025-12": [
+   41,
+   2262
+  ],
+  "2026-01": [
+   141,
+   10779
+  ],
+  "2026-02": [
+   124,
+   6447
+  ],
+  "2026-03": [
+   122,
+   4375
+  ],
+  "2026-04": [
+   165,
+   5946
+  ],
+  "2026-05": [
+   111,
+   9223
+  ],
+  "2026-06": [
+   134,
+   4728
+  ],
+  "2026-07": [
+   84,
+   4670
+  ],
+  "2026-08": [
+   130,
+   5168
+  ],
+  "2026-09": [
+   125,
+   6763
+  ],
+  "2026-10": [
+   101,
+   9809
+  ],
+  "2026-11": [
+   14,
+   562
+  ]
+ },
+ "partial": {
+  "month": "2026-11",
+  "rows": 14,
+  "employees": 562
+ },
+ "months": {
+  "2026-08": {
+   "label": "August 2026",
+   "rows": 130,
+   "distinct_filings": 122,
+   "employees": 5168,
+   "z_rows": 0.38,
+   "z_emps": -0.54,
+   "seasonal": [
+    202,
+    73,
+    114
+   ],
+   "seasonal_median": 114
+  },
+  "2026-09": {
+   "label": "September 2026",
+   "rows": 125,
+   "distinct_filings": 115,
+   "employees": 6763,
+   "z_rows": 0.24,
+   "z_emps": 0.14,
+   "seasonal": [
+    98,
+    91,
+    103
+   ],
+   "seasonal_median": 98
+  },
+  "2026-10": {
+   "label": "October 2026",
+   "rows": 101,
+   "distinct_filings": 89,
+   "employees": 9809,
+   "z_rows": -0.4,
+   "z_emps": 1.43,
+   "seasonal": [
+    96,
+    143,
+    273
+   ],
+   "seasonal_median": 143,
+   "concentration": [
+    {
+     "company": "AEG Management Oakland LLC",
+     "employees": 1605
+    },
+    {
+     "company": "Dreyer's Grand Ice Cream",
+     "employees": 1543
+    },
+    {
+     "company": "24Hr Homecare",
+     "employees": 875
+    }
+   ]
+  }
+ },
+ "lag": {
+  "n": 458,
+  "median": 61.0,
+  "p25": 59,
+  "p75": 63
+ },
+ "method": "Each recent month is compared with a fixed 24-month reference window, July 2024 to June 2026 - the same window for all three months, built only from official state data. Robust z = (month - median) / (1.4826 x MAD). An absolute z above 2 on rows or on announced employees flags a month as unusual: that is an exploratory heuristic cutoff, chosen because it resists one-off heavy months like May 2025. No calibrated false-alarm rate is claimed. A seasonal cross-check compares the same month in 2023, 2024 and 2025.",
+ "units": "Rows are EDD county-level WARN rows, one per site per county. Announced employees are plain row sums: every filing with rows in several counties was checked by site address, and 22 of 23 groups are separate sites (equal headcounts like two Dreyer's plants at 221 each are real, not double counts). The one same-site pair (John Muir Health, 15 vs 3 positions, identical dates) is counted as reported - a 3-position uncertainty in August. Distinct filings (same company, notice date and effective date) are context only.",
+ "limits": "Descriptive change detection, not a forecast and not a causal claim. WARN filings do not record why layoffs happen, so this view cannot confirm or rule out an AI link. Announced positions are plans, not realized job losses, and are not unique people. California only; other states file under different thresholds, so this says nothing about the country."
+}
