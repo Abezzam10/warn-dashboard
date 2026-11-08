@@ -68,12 +68,16 @@ test('chart rows exclude the partial month and tag the window', () => {
   assert.deepEqual(rows.filter(r => r.kind === 'after').map(r => r.month), ['2026-07', '2026-08', '2026-09']);
 });
 
-test('reading scale: within, elevated, flag both directions', () => {
-  assert.equal(readingFor(0.38), 'Within normal range');
-  assert.equal(readingFor(1.43), 'Elevated, below the flag');
-  assert.equal(readingFor(-0.4), 'Within normal range');
-  assert.ok(readingFor(2.5).includes('flag crossed'));
-  assert.ok(readingFor(-2.5).includes('flag crossed'));
+test('reading scale stays literal: threshold wording, no normal-range claim', () => {
+  assert.equal(readingFor(0.38), 'Below the exploratory flag threshold');
+  assert.equal(readingFor(1.43), 'Elevated, below the exploratory flag threshold');
+  assert.equal(readingFor(-0.4), 'Below the exploratory flag threshold');
+  assert.equal(readingFor(-1.6), 'Quiet, below the exploratory flag threshold');
+  assert.ok(readingFor(2.5).includes('Crossed the exploratory flag threshold'));
+  assert.ok(readingFor(-2.5).includes('Crossed the exploratory flag threshold'));
+  for (const z of [0.38, 1.43, -0.4, -1.6, 2.5, -2.5, 0]) {
+    assert.ok(!readingFor(z).toLowerCase().includes('normal range'), `no normal-range claim at z=${z}`);
+  }
   assert.equal(FLAG, 2);
 });
 

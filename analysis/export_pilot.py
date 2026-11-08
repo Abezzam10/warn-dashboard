@@ -40,7 +40,8 @@ LIMITS = ("Descriptive change detection, not a forecast and not a causal claim. 
           "filings do not record why layoffs happen, so this view cannot confirm or rule "
           "out an AI link. Announced positions are plans, not realized job losses, and "
           "are not unique people. California only; other states file under different "
-          "thresholds, so this says nothing about the country.")
+          "thresholds, so this says nothing about the country. October is still "
+          "completing: filings processed after 4 Nov are not yet in the EDD file.")
 
 FRESHNESS = ("Official California EDD data through 4 Nov 2026, retrieved 8 Nov 2026. "
              "The public feed's newest snapshot is 25 Sep 2026, about six weeks behind.")

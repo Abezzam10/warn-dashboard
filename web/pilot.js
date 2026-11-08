@@ -26,10 +26,12 @@ export function flagCrossed(z) {
 }
 
 export function readingFor(z) {
-  if (flagCrossed(z)) return z > 0 ? 'Outside the usual range - flag crossed' : 'Unusually low - flag crossed';
-  if (z > 1) return 'Elevated, below the flag';
-  if (z < -1) return 'Quiet, below the flag';
-  return 'Within normal range';
+  // Literal threshold wording only: |z|>2 is an exploratory heuristic cutoff,
+  // not a validated normal/unusual boundary, so no "normal range" claim.
+  if (flagCrossed(z)) return z > 0 ? 'Crossed the exploratory flag threshold' : 'Crossed the exploratory flag threshold (low side)';
+  if (z > 1) return 'Elevated, below the exploratory flag threshold';
+  if (z < -1) return 'Quiet, below the exploratory flag threshold';
+  return 'Below the exploratory flag threshold';
 }
 
 export function fmtZ(z) {
@@ -146,6 +148,9 @@ async function init() {
       `Same-month filing norm 2023-25: ${fmt(s.seasonalMedian)} (this month: ${fmt(s.rows)}).`,
       `November so far: ${fmt(data.partial.rows)} rows, ${fmt(data.partial.employees)} announced - partial month, not compared.`,
     ];
+    if (month === '2026-10') {
+      notes.push('October is still completing: filings processed after 4 Nov are not yet in the EDD file.');
+    }
     if (s.concentration) {
       const share = Math.round(s.concentration.slice(0, 2).reduce((a, c) => a + c.employees, 0) / s.employees * 100);
       notes.push(`Two employers - ${s.concentration[0].company} (${fmt(s.concentration[0].employees)}) and ${s.concentration[1].company} (${fmt(s.concentration[1].employees)}) - account for about ${share}% of October's announced positions.`);

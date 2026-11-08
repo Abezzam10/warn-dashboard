@@ -38,6 +38,7 @@ class TestPilotArtifact(unittest.TestCase):
         self.assertIn("3-position uncertainty", PILOT["units"])
         self.assertIn("not a forecast", PILOT["limits"])
         self.assertIn("cannot confirm or rule out an AI link", PILOT["limits"])
+        self.assertIn("October is still completing", PILOT["limits"])
 
     def test_series_and_partial_month(self):
         for m, v in RESULTS["series"].items():
