@@ -135,17 +135,17 @@ async function init() {
     $('pilot-month-label').textContent = t.label;
     $('pilot-source').textContent = 'official EDD data';
     $('pilot-stats').innerHTML = [
-      [fmt(s.rows), 'WARN rows (one per county per filing)'],
+      [fmt(s.rows), 'WARN filings (one row per county per filing)'],
       [fmt(s.distinctFilings), 'Distinct filings (counties merged)'],
       [fmt(s.employees), 'Announced employees'],
-      [`${fmtZ(s.z)} - ${s.reading.toLowerCase()}`, `Robust z, ${metric === 'rows' ? 'filings' : 'employees'} vs fixed 24-month window`],
+      [flagCrossed(s.z) ? 'FLAGGED' : 'Not flagged', `unusualness check: ${metric === 'rows' ? 'filings' : 'employees'} vs the previous two years (z = ${fmtZ(s.z)}; flags beyond +/-2, an exploratory line)`],
     ].map(([n, l]) => `<div class="stat"><strong>${esc(n)}</strong><span>${esc(l)}</span></div>`).join('');
     const rows = chartRows(data, metric, month);
     $('pilot-chart').innerHTML = chartSvg(rows, metric, s.windowMedian, t.label);
     const w = data.reference_window;
     const notes = [
-      `Bars run Jul 2024 to Oct 2026. Dashed line: median of the fixed 24-month reference window (${w.start} to ${w.end}, the same window for all three months; ${metric === 'rows' ? `filings median ${fmt(w.notices_median)}, MAD ${fmt(w.notices_mad)}` : `employees median ${fmt(w.employees_median)}, MAD ${fmt(w.employees_mad)}`}). An absolute z above 2 flags a month: an exploratory heuristic cutoff, no calibrated false-alarm rate.`,
-      `Same-month filing norm 2023-25: ${fmt(s.seasonalMedian)} (this month: ${fmt(s.rows)}).`,
+      `Bars run Jul 2024 to Oct 2026. The dashed line is the typical month (median) of ${w.start} to ${w.end} - the same two-year window for every month shown. A month is flagged only when it sits far from that (z beyond +/-2: an exploratory line, with no guaranteed error rate).`,
+      `Same-month comparison: in 2023-25 this month of the year typically saw ${fmt(s.seasonalMedian)} filings (this year: ${fmt(s.rows)}).`,
       `November so far: ${fmt(data.partial.rows)} rows, ${fmt(data.partial.employees)} announced - partial month, not compared.`,
     ];
     if (month === '2026-10') {

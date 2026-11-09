@@ -1,11 +1,14 @@
 // Layoff outlook (research prototype): multi-horizon forecasts of JOLTS
 // layoffs & discharges. All numbers come from data/econ_forecast.json,
 // precomputed by ingest/econ_forecast.py. Nothing is estimated in the browser.
+// Copy is written for a non-technical reader; the technical detail stays in
+// expandable blocks, never deleted.
 const $e = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = n => Number(n).toLocaleString();
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const mlabel = m => `${MONTHS[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}`;
+const mil = v => `${(v / 1000).toFixed(2)} million`;
 const MODEL_LABEL = {
   huber: 'Linear regression with Huber loss (outlier-robust) - machine learning',
   huber_targetonly: 'Huber linear model on lagged layoffs only - ML ablation, no economic inputs',
@@ -15,6 +18,11 @@ const MODEL_LABEL = {
   seasonal_naive: 'Same month last year - simple baseline, not ML',
   persistence: 'Latest published value - simple baseline, not ML',
   ma12: '12-month moving average - simple baseline, not ML'};
+// Short names for plain sentences.
+const MODEL_SHORT = {
+  huber: 'a machine-learning model', huber_targetonly: 'a machine-learning model using only past layoffs',
+  ridge: 'a machine-learning model', residual_ridge: 'a machine-learning model', gbt: 'a machine-learning model',
+  seasonal_naive: 'the same month last year', persistence: 'the latest published value', ma12: 'a 12-month average'};
 let EF = null, H = 1;
 const genDate = () => new Date(EF.generated_at).toLocaleDateString('en-US',
   {timeZone: 'America/New_York', year: 'numeric', month: 'short', day: 'numeric'}) + ' ET';
@@ -36,31 +44,31 @@ function forecastChart(hz) {
   const li = series.length + 1;
   const liveSvg = live ? `
     <line x1="${X(li)}" x2="${X(li)}" y1="${Y(live.lower_80)}" y2="${Y(live.upper_80)}" stroke="#b0822f" stroke-width="2"/>
-    <circle cx="${X(li)}" cy="${Y(live.point)}" r="4.5" fill="#b0822f"><title>${esc(live.target_month)} forecast: ${fmt(live.point)}k; band ${fmt(live.lower_80)}k-${fmt(live.upper_80)}k</title></circle>` : '';
-  return `<svg viewBox="0 0 1000 220" role="img" aria-label="Backtested predictions versus reported layoffs and discharges, with the current forecast and its residual band.">
+    <circle cx="${X(li)}" cy="${Y(live.point)}" r="4.5" fill="#b0822f"><title>${esc(mlabel(live.target_month))} forecast: ${fmt(live.point)}k; range ${fmt(live.lower_80)}k-${fmt(live.upper_80)}k</title></circle>` : '';
+  return `<svg viewBox="0 0 1000 220" role="img" aria-label="What the model would have predicted versus what was actually reported, plus the current forecast and its uncertainty range.">
     <path d="${line('a')}" fill="none" stroke="#789562" stroke-width="2"/>
     <path d="${line('p')}" fill="none" stroke="#4a6fa5" stroke-width="2" stroke-dasharray="5 3"/>
     ${liveSvg}
-    <text x="40" y="16" font-size="12" fill="#789562">reported (BLS JOLTS)</text>
-    <text x="230" y="16" font-size="12" fill="#4a6fa5">backtest prediction (${esc(hz.published_model)})</text>
-    ${live ? `<text x="560" y="16" font-size="12" fill="#b0822f">current forecast + residual band</text>` : ''}
+    <text x="40" y="16" font-size="12" fill="#789562">actually reported (BLS JOLTS)</text>
+    <text x="250" y="16" font-size="12" fill="#4a6fa5">what the model would have predicted</text>
+    ${live ? `<text x="620" y="16" font-size="12" fill="#b0822f">forecast + uncertainty range</text>` : ''}
     <text x="40" y="212" font-size="11">${esc(mlabel(series[0].m))}</text>
     <text x="880" y="212" font-size="11">${live ? esc(mlabel(live.target_month)) : esc(mlabel(series.at(-1).m))}</text>
   </svg>`;
 }
 
 function metricsTable(hz) {
-  const eras = [['sel_2024', '2024 (selection)'], ['sel_2025', '2025 (selection)'], ['test_2026', '2026 (untouched test)']];
+  const eras = [['sel_2024', '2024 (used to choose)'], ['sel_2025', '2025 (used to choose)'], ['test_2026', '2026 (unseen final test)']];
   const models = Object.keys(MODEL_LABEL).filter(m => eras.some(([e]) => hz.metrics[e]?.models?.[m]));
   const best = e => Math.min(...models.map(m => hz.metrics[e]?.models?.[m]?.mae ?? Infinity));
-  return `<div class="tablewrap"><table><thead><tr><th>Model</th>${eras.map(([, l]) => `<th>${l} MAE</th>`).join('')}</tr></thead><tbody>
-    ${models.map(m => `<tr>${m === hz.published_model ? '<td><strong>' + esc(MODEL_LABEL[m]) + ' (published)</strong></td>' : '<td>' + esc(MODEL_LABEL[m]) + '</td>'}
+  return `<div class="tablewrap"><table><thead><tr><th>Model</th>${eras.map(([, l]) => `<th>${l}</th>`).join('')}</tr></thead><tbody>
+    ${models.map(m => `<tr>${m === hz.published_model ? '<td><strong>' + esc(MODEL_LABEL[m]) + ' (shown above)</strong></td>' : '<td>' + esc(MODEL_LABEL[m]) + '</td>'}
       ${eras.map(([e]) => {const d = hz.metrics[e]?.models?.[m]; const b = d && d.mae === best(e);
         return `<td>${d ? (b ? '<strong>' : '') + fmt(d.mae) + 'k' + (b ? '</strong>' : '') + ` <span class="muted">n=${d.n}</span>` : '-'}</td>`;}).join('')}</tr>`).join('')}
   </tbody></table></div>
-  <p class="muted">MAE in thousands of layoffs/discharges per month (the series runs about 1.5-1.9M). Lower is better;
-  bold is the era's best. Model choice and band calibration used 2024-2025 only; 2026 was never used for any choice.
-  A pre-2024 diagnostic era overlaps training data and lives only in the raw artifact, not here.</p>`;
+  <p class="muted">MAE = average miss, in thousands of layoffs/discharges per month (the series runs about 1.5-1.9M, so
+  64k is roughly a 3-4% miss). Lower is better; bold is the era's best. Models were chosen on 2024-2025 only;
+  2026 was never used for any choice. A pre-2024 diagnostic era overlaps training data and stays in the raw data file.</p>`;
 }
 
 function alertTable(hz) {
@@ -76,43 +84,54 @@ function alertTable(hz) {
   Counts are tiny; one month either way flips these rates. The current forecast carries no alert flag.</p></details>`;
 }
 
-function coverageChip(hz) {
-  const sel = hz.interval.selection_coverage, tst = hz.interval.test_2026_coverage;
-  const bad = tst && tst.coverage_80 != null && tst.coverage_80 < 0.6;
-  return chip(`band contained actuals: ${sel?.coverage_80 ?? '-'} of 2024-25 (in-calibration, optimistic) · ${tst?.coverage_80 ?? '-'} of ${tst?.n ?? 0} in 2026 (held out)`, bad)
-    + (bad ? chip('band ran too narrow on the 2026 test - treat as optimistic', true) : '');
+function verdictChips(hz) {
+  const isML = hz.published_model_kind === 'machine_learning';
+  const hd = hz.holdout_2026;
+  const tstModels = hz.metrics.test_2026?.models || {};
+  const best26 = Object.entries(tstModels).sort((a, b) => a[1].mae - b[1].mae)[0];
+  const pub26 = tstModels[hz.published_model]?.mae;
+  const out = [];
+  if (isML && hd.held_up) {
+    out.push(chip('Beat the simple guesses in 2024-25 testing AND stayed ahead on the unseen 2026 test - the strongest result on this page, but still based on only 9 test months'));
+  } else if (isML) {
+    out.push(chip('Won the 2024-25 testing but LOST to a simple guess on the unseen 2026 test - treat this forecast as unreliable', true));
+  } else {
+    out.push(chip('Machine-learning models were tested here and lost - this forecast is a simple baseline instead', true));
+    if (best26 && pub26 != null && best26[0] !== hz.published_model) {
+      out.push(chip(`Looking back, ${esc(MODEL_SHORT[best26[0]] || best26[0])} did better in 2026 (${fmt(best26[1].mae)}k vs ${fmt(pub26)}k average miss) - but re-picking after seeing the test would be cheating, so it stays unused`, true));
+    } else {
+      out.push(chip('This baseline was also the best performer on the 2026 test'));
+    }
+  }
+  const tst = hz.interval.test_2026_coverage;
+  const sel = hz.interval.selection_coverage;
+  const held = tst && tst.coverage_80 != null ? Math.round(tst.coverage_80 * tst.n) : null;
+  if (tst && tst.coverage_80 != null && tst.coverage_80 < 0.6) {
+    out.push(chip(`In the 2026 test the real number landed inside the uncertainty range only ${held} of ${tst.n} months - the range is too narrow, so distrust it`, true));
+  } else if (tst) {
+    out.push(chip(`In the 2026 test the real number landed inside the uncertainty range ${held} of ${tst.n} months (in the 2024-25 period it was tuned on: ${sel?.coverage_80 ?? '-'})`));
+  }
+  return out.join(' ');
 }
 
 function render() {
   const hz = EF.horizons[String(H)];
   const isML = hz.published_model_kind === 'machine_learning';
-  const hd = hz.holdout_2026;
   const l = hz.live;
-  const tstModels = hz.metrics.test_2026?.models || {};
-  const best26 = Object.entries(tstModels).sort((a, b) => a[1].mae - b[1].mae)[0];
-  const pub26 = tstModels[hz.published_model]?.mae;
-  const statusChip = isML
-    ? (hd.held_up ? chip('ML won 2024-25 selection and stayed ahead on the untouched 2026 test')
-                  : chip('ML won 2024-25 selection but LOST to a simple baseline on the untouched 2026 test', true))
-    : chip('ML did not beat simple baselines on 2024-25 here - the baseline is published instead', true)
-    + (best26 && pub26 != null && best26[0] !== hz.published_model
-      ? chip(`retrospectively, ${best26[0]} was better on the 2026 test (${fmt(best26[1].mae)}k vs ${fmt(pub26)}k) - not used for selection`, true)
-      : chip('published model was also the best on the 2026 test'));
   $e('econfc-body').innerHTML = `
     <div class="pilot-controls">${[1,2,3,4,5,6].map(h =>
       `<button class="secondary" data-h="${h}" ${h === H ? 'aria-pressed="true" style="font-weight:700"' : ''}>${h} mo ahead</button>`).join('')}</div>
     <div class="stats">
-      ${l ? `<div class="stat"><strong>${fmt(l.point)}k</strong><span>forecast for ${esc(mlabel(l.target_month))}</span></div>
-      <div class="stat"><strong>${fmt(l.lower_80)}k - ${fmt(l.upper_80)}k</strong><span>residual band (calibrated on 2024-25, nominal 80%)</span></div>` : ''}
-      <div class="stat"><strong>${isML ? 'ML' : 'Baseline'}</strong><span>${esc(MODEL_LABEL[hz.published_model])}</span></div>
+      ${l ? `<div class="stat"><strong>${mil(l.point)}</strong><span>expected layoffs and discharges in ${esc(mlabel(l.target_month))}, nationwide</span></div>
+      <div class="stat"><strong>${mil(l.lower_80)} - ${mil(l.upper_80)}</strong><span>uncertainty range - read the trust notes below before using it</span></div>` : ''}
+      <div class="stat"><strong>${isML ? 'ML model' : 'Simple baseline'}</strong><span>${esc(MODEL_SHORT[hz.published_model] || hz.published_model)} makes this forecast</span></div>
     </div>
-    <p>${statusChip} ${coverageChip(hz)}</p>
-    ${l ? `<p class="muted">Issued from the latest-revised values the lag rule expects published as of ${genDate()}
-      (issue month ${esc(mlabel(EF.issue_month))}; latest reported layoffs month: ${esc(mlabel(EF.target.latest_observed_month))}).
-      Trained on ${fmt(l.n_train)} monthly examples through issue ${esc(l.trained_through_issue)}.
-      This is a retrospective approximation of real-time skill, not a prospectively validated forecast.</p>` : ''}
-    <div class="panel">${forecastChart(hz)}<p class="muted">The prediction line is the model selected on 2024-2025; its 2024-2025 segment is the evidence selection was based on - retrospective, not independent proof. Only the 2026 segment was untouched by every choice.</p></div>
-    <h3>Backtest scores, all candidate models</h3>${metricsTable(hz)}
+    <p>${verdictChips(hz)}</p>
+    ${l ? `<p class="muted">Issued ${genDate()} from the latest government data (issue month ${esc(mlabel(EF.issue_month))};
+      the most recent actually-reported layoffs month is ${esc(mlabel(EF.target.latest_observed_month))}).
+      This is a research prototype, not a validated forecast.</p>` : ''}
+    <div class="panel">${forecastChart(hz)}<p class="muted">The dashed line over 2024-2025 is the testing the model choice was based on - retrospective, not independent proof. Only the 2026 part was a truly unseen test.</p></div>
+    <details><summary>Test scores for every model, including the losers</summary>${metricsTable(hz)}</details>
     ${alertTable(hz)}`;
   document.querySelectorAll('[data-h]').forEach(b => b.onclick = () => {H = Number(b.dataset.h); render();});
 }
@@ -121,41 +140,35 @@ function render() {
   try {
     EF = await fetch('data/econ_forecast.json').then(r => {if (!r.ok) throw Error(`HTTP ${r.status}`); return r.json();});
     $e('econfc-freshness').textContent =
-      `RESEARCH PROTOTYPE · pseudo-real-time backtest on latest-revised data with publication-lag simulation - ` +
-      `not as-of vintages, not prospectively validated; real-time skill is usually lower. Generated ${genDate()}.`;
+      `RESEARCH PROTOTYPE - testing used revised historical data with assumed publication delays, ` +
+      `so real-world accuracy will likely be worse than the tests suggest. Generated ${genDate()}.`;
     const gaps = EF.source_gaps || {};
     const gapNote = Object.keys(gaps).length
-      ? ` Source gaps handled by past-only carry-forward with a missingness flag (never the target, never reaching forward): ` +
+      ? ` Some input months were missing and were filled by carrying the last known value forward (never backward): ` +
         Object.entries(gaps).map(([k, v]) => `${k} ${v.join(', ')}${EF.gap_notes?.[k]?.[v[0]] ? ' - ' + EF.gap_notes[k][v[0]] : ''}`).join('; ') + '.' : '';
     $e('econfc-methods').innerHTML = `
-      <h3>How this forecast works</h3>
-      <p>One model per horizon (1-6 months ahead) predicts the national JOLTS <strong>layoffs and discharges</strong> level
-      (${esc(EF.target.units)}). That measure includes firings and other discharges - not only layoffs for economic
-      weakness - and it is not a WARN notice count and not a count of people. ${esc(EF.issue_semantics)}</p>
-      <p>Clues expected available at each issue date under the lag rule: earlier layoffs, job openings and hires (JOLTS,
-      published about six weeks late), unemployment rate, payrolls and weekly hours (published the following month), and
-      DOL weekly initial claims (seasonally adjusted, averaged to months). Training rows are restricted to targets already
-      published at each test origin; lookup lineage and future-perturbation tests run on every pipeline execution and
-      abort the publish on any future-influence leak.</p>
-      <p>Evaluation is chronological and prequential: each backtest prediction comes from a model refit on everything
-      published by that origin (later 2026 predictions may train on earlier 2026 actuals). Model choice and band
-      calibration used 2024-2025 only - that is the sense in which 2026 is an untouched test. The ablation row
-      (Huber on lagged layoffs only) is an exploratory comparison on identical folds: with this few origins, the
-      incremental value of the economic inputs carries wide uncertainty, and no causal importance is attributed to
-      any input. A learned model is published
-      only where it beat the strongest simple baseline (same month last year, latest published value, or 12-month average)
-      on 2024-2025. Where it did not, the baseline is published as the forecast and the ML scores stay visible as failed
-      candidates - a baseline is never dressed up as ML. Where a selected ML model later lost on the 2026 test, that is
-      labeled above; models are not re-picked on 2026.</p>
-      <h3>Limits to read before using a number</h3>
-      <p>Latest-revised series, not as-of vintages: BLS revises these figures, so the backtest approximates - and usually
-      flatters - real-time performance. Publication lags are fixed approximations of the release calendar, not a per-release
-      audit; weekly claims are not seasonally adjusted. Only about 24 selection and 9 final-test months exist per horizon,
-      so per-year scores carry wide sampling error. Nothing here says the economy <em>caused</em> a layoff, and no accuracy
-      level is promised beyond the measured backtests shown above.${esc(gapNote)}</p>
+      <h3>How this forecast works, in plain terms</h3>
+      <p>It predicts the national monthly count of <strong>layoffs and discharges</strong> from the BLS JOLTS survey
+      (in thousands; that count includes firings and other discharges, not only layoffs for economic weakness - and it
+      is a different measure from the WARN notice archive below). For each horizon, one model looks at what was known
+      at the time: earlier layoffs, job openings and hires, the unemployment rate, payrolls, weekly hours worked, and
+      weekly unemployment claims.</p>
+      <p>To keep it honest, models were chosen using only 2024-2025 and then graded on 2026, which played no part in
+      any choice. A machine-learning model is used for a horizon only if it beat simple guesses (last month's value,
+      the same month last year, a 12-month average) in 2024-2025; where it didn't, the simple guess is the forecast and
+      the failed model's scores stay visible. Where a chosen model later lost on 2026, that is labeled above - models
+      are not re-picked after seeing the test. Automated checks rerun on every update to confirm no future information
+      leaks into a past prediction, and the whole update aborts if they fail.</p>
+      <h3>Why you should still not fully trust it</h3>
+      <p>Training used today's revised history with assumed publication delays, not the exact figures known on each
+      past date - so these tests flatter real-world skill. Only about two dozen choosing months and nine 2026 test
+      months exist per horizon, so the scores themselves are noisy. Adding the economic inputs has not been proven to
+      beat using past layoffs alone - that comparison is shown in the score table, and with this little data it is
+      inconclusive. Nothing here says the economy <em>caused</em> any layoff, and no accuracy level is promised beyond
+      the tests shown.${esc(gapNote)}</p>
       <p class="muted">Sources: ${EF.sources.map(s =>
         `<a href="${esc(s.series_page)}">${esc(s.id)}</a> (${esc(s.agency)}, through ${esc(s.latest.slice(0, 7))})`).join(' · ')}.
-        Snapshots and code: <a href="https://github.com/Abezzam10/warn-dashboard">this repository</a>.</p>`;
+        Code and data: <a href="https://github.com/Abezzam10/warn-dashboard">this repository</a>.</p>`;
     render();
   } catch (e) {
     $e('econfc-freshness').textContent = `Economic forecast data could not load: ${e.message}. No numbers are substituted.`;
