@@ -13,6 +13,7 @@ def main():
     fred = load_json(DATA / "intermediate" / "fred.json", {"status": "unavailable"})
     gdelt = load_json(DATA / "intermediate" / "gdelt.json",
                       {"articles": [], "matched_at": None, "errors": []})
+    econ = load_json(DATA / "intermediate" / "econ_forecast.json")
     notices = validated["notices"]
     month_cap = (fetch_meta.get("coverage_generated_at") or "")[:7]
 
@@ -78,6 +79,10 @@ def main():
     dump_json({"schema_version": SCHEMA_VERSION, **forecasts}, DATA / "forecasts.json")
     dump_json({"schema_version": SCHEMA_VERSION, **{k: v for k, v in gdelt.items()}},
               DATA / "news.json")
+    if econ:
+        dump_json(econ, DATA / "econ_forecast.json")
+    else:
+        print("build: econ_forecast.json missing - outlook section will show unavailable")
     p = dump_json(meta, DATA / "meta.json")
     size_mb = round((DATA / "notices.json").stat().st_size / 1e6, 1)
     print(f"build: {len(notices)} notices ({size_mb} MB), upstream stale_days={stale_days}")

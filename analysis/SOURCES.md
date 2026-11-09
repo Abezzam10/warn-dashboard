@@ -65,3 +65,47 @@ May 2025 spike (22,372 employees) is real: one Tend Exchange notice of 16,132.
 Jul 2026: 84 vs 82 (employees 4,670 vs 4,568, ~2%). Aug: 130 vs 102 (5,168 vs 4,856, ~6%).
 Sep: 125 vs 84 (6,763 vs 3,840) - the 25 Sep feed snapshot missed late-month filings
 and everything after.
+
+---
+
+# JOLTS layoff outlook (econ forecast) - sources, method, tests
+
+Retrieved 8 Nov 2026. All series are US government data (BLS / DOL ETA),
+downloaded through FRED's public keyless CSV export
+(`https://fred.stlouisfed.org/graph/fredgraph.csv?id=<SERIES>`) because
+download.bls.gov flat files refuse automated access from some runners.
+
+| Series | Agency | Use | Assumed publication lag |
+| --- | --- | --- | --- |
+| JTSLDL | BLS JOLTS | target: layoffs & discharges, total nonfarm, SA, thousands | 2 months |
+| JTSJOL | BLS JOLTS | predictor: job openings | 2 months |
+| JTSHIL | BLS JOLTS | predictor: hires | 2 months |
+| UNRATE | BLS CPS | predictor: unemployment rate | 1 month |
+| PAYEMS | BLS CES | predictor: payroll employment | 1 month |
+| AWHNONAG | BLS CES | predictor: average weekly hours | 1 month |
+| ICSA | DOL ETA | predictor: weekly initial claims, SA (monthly mean) | 1 month |
+
+- UNRATE 2025-10 was never published (2025 federal government shutdown halted
+  CPS collection: https://www.bls.gov/cps/methods/2025-federal-government-shutdown-impact-cps.htm
+  and https://www.bls.gov/bls/2025-lapse-revised-release-dates.htm). Handled by
+  past-only carry-forward with a missingness indicator; never interpolated
+  from the future; the target is never carried.
+- Values are latest vintages as downloaded, not as-of vintages: backtests are
+  pseudo-real-time and usually flatter real-time skill.
+- Method: expanding-window rolling-origin backtest, one direct model per
+  horizon 1-6; candidates ridge, Huber-loss linear regression, gradient-boosted
+  trees, residual-ridge vs baselines (seasonal naive, persistence, 12m mean);
+  selection + interval calibration on 2024-2025 targets only; 2026 targets are
+  an untouched final test (prequential: models refit per origin; "untouched"
+  covers selection/calibration only). Candidates include huber_targetonly, an
+  exploratory ablation on lagged target values alone (no causal importance is
+  attributed to any input; incremental economic value is descriptive with wide
+  uncertainty). Ridge alpha uses inner TimeSeriesSplit with gap=h+2. Leakage
+  control: lookup-lineage assertions plus a future-perturbation test (all
+  observations past each origin's cutoff are mangled and predictions must be
+  bit-identical) run in the pipeline and in tests/test_econ_leakage.py; these
+  validate cutoff logic on the latest snapshot, not historical availability.
+  ML publishes only where it beats the strongest baseline on the selection era.
+- Reproduce: `python ingest/fetch_econ.py && python ingest/econ_forecast.py`
+  (needs numpy + scikit-learn); contract tests in tests/test_contract.py
+  (`TestEconForecastContract`). Raw snapshots: data/snapshots/econ/.

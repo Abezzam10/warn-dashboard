@@ -27,7 +27,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run data pipeline (stdlib only)
+      - name: Install modeling dependencies (numpy, scikit-learn)
+        run: pip install numpy scikit-learn
+      - name: Run data pipeline
         run: python ingest/run_all.py
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
@@ -55,7 +57,7 @@ jobs:
         run: |
           mkdir -p _site/data
           cp -r web/* _site/
-          cp data/notices.json data/series.json data/forecasts.json data/news.json data/meta.json _site/data/
+          cp data/notices.json data/series.json data/forecasts.json data/news.json data/meta.json data/econ_forecast.json _site/data/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

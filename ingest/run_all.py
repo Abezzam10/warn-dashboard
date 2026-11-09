@@ -4,7 +4,8 @@ import subprocess, sys, pathlib
 
 HERE = pathlib.Path(__file__).resolve().parent
 STEPS = ["fetch_warn.py", "validate.py", "dedupe.py", "forecast.py",
-         "fetch_bls.py", "fetch_fred.py", "fetch_gdelt.py", "build_json.py"]
+         "fetch_bls.py", "fetch_fred.py", "fetch_gdelt.py",
+         "fetch_econ.py", "econ_forecast.py", "build_json.py"]
 
 
 def main():

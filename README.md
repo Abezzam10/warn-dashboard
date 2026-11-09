@@ -26,6 +26,14 @@ web/ dashboard: explorer -> chat -> tailored analysis view -> saved views
 ```
 
 - `ingest/` - pipeline: fetch, validate, dedupe-flag, forecast, build JSON.
+  `fetch_econ.py` + `econ_forecast.py` build the layoff outlook: one direct
+  model per 1-6 month horizon for national JOLTS layoffs & discharges, from
+  lagged layoffs and BLS/DOL economic series (FRED public CSV export, no key).
+  Publication lags are enforced, training rows are restricted to targets
+  already published at each backtest origin (asserted in code), model choice
+  and interval calibration use 2024-2025 only, and 2026 is an untouched final
+  test. A learned model is published only where it beats the strongest simple
+  baseline. Requires numpy + scikit-learn (installed by the workflow).
 - `data/` - published artifacts: `notices.json`, `series.json`,
   `forecasts.json`, `news.json`, `meta.json`.
 - `web/` - the static dashboard (no build step, plain ES modules).
@@ -43,6 +51,13 @@ explicit "the data doesn't record this" answer. If the model cannot load, the
 chat degrades to suggested questions that drive the same engine.
 
 ## Honest limits
+
+- The layoff outlook is a research prototype: pseudo-real-time backtests on
+  latest-revised series with fixed publication-lag simulation, not as-of
+  vintages and not prospectively validated. Where a learned model loses to a
+  simple baseline, the baseline is published and labeled as one. No accuracy
+  level or false-alarm rate is promised beyond the measured backtests shown
+  on the page.
 
 - The WARN Feed files were generated 2026-09-25 and can be stale; the site
   shows the upstream build date and a staleness banner. Free access is the

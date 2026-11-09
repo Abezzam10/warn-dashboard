@@ -79,6 +79,65 @@ class TestPublishedArtifacts(unittest.TestCase):
             self.assertTrue(a["url"].startswith("http"))
 
 
+class TestEconForecastContract(unittest.TestCase):
+    """The learned-forecast artifact must stay honest: no lookahead in its own
+    records, the publication gate provably applied, intervals ordered."""
+
+    def setUp(self):
+        self.j = load("econ_forecast.json")
+
+    def test_schema_and_horizons(self):
+        self.assertEqual(self.j["schema_version"], 1)
+        self.assertEqual(sorted(self.j["horizons"], key=int), ["1", "2", "3", "4", "5", "6"])
+        self.assertTrue(self.j["evaluation"]["pseudo_real_time"])
+        self.assertTrue(self.j["evaluation"]["caveats"])
+        self.assertNotIn("interpolated_predictor_months", self.j)
+        self.assertIn("issue_semantics", self.j)
+
+    def test_publication_gate(self):
+        for h, hz in self.j["horizons"].items():
+            self.assertIn(hz["status"], ("ok", "no_ml_beat"))
+            is_ml = hz["published_model_kind"] == "machine_learning"
+            self.assertEqual(hz["status"] == "ok", is_ml)
+            sel = hz["metrics"]["selection_2024_2025"]["models"]
+            base = hz["strongest_baseline"]["name"]
+            if hz["status"] == "ok":
+                # the published ML model really did beat the strongest baseline
+                self.assertLess(sel[hz["published_model"]]["mae"], sel[base]["mae"])
+            for m, d in sel.items():
+                self.assertGreaterEqual(d["n"], 12, f"h={h} {m}: too few selection origins")
+
+    def test_no_lookahead_in_backtest_rows(self):
+        for h, hz in self.j["horizons"].items():
+            h = int(h)
+            for r in hz["backtest"]:
+                self.assertLess(r["origin"], r["target"])
+                oy, om = int(r["origin"][:4]), int(r["origin"][5:7])
+                ty, tm = int(r["target"][:4]), int(r["target"][5:7])
+                self.assertEqual((ty * 12 + tm) - (oy * 12 + om), h)
+
+    def test_live_forecast_shape(self):
+        for h, hz in self.j["horizons"].items():
+            live = hz["live"]
+            self.assertIsNotNone(live, f"h={h} has no live forecast")
+            self.assertLess(self.j["issue_month"], live["target_month"])
+            self.assertLessEqual(live["lower_80"], live["point"])
+            self.assertLessEqual(live["point"], live["upper_80"])
+            self.assertEqual(live["model"], hz["published_model"])
+            # intervals are tied to the published model's own selection residuals
+            self.assertIn("published model", hz["interval"]["method"])
+
+    def test_holdout_reported_not_reselected(self):
+        for h, hz in self.j["horizons"].items():
+            hd = hz["holdout_2026"]
+            self.assertIn("held_up", hd)
+            self.assertGreater(hd["n"], 0)
+        # every era reports every model - selection never hides a loser
+        for h, hz in self.j["horizons"].items():
+            for era in ("sel_2024", "sel_2025", "test_2026"):
+                self.assertTrue(hz["metrics"][era]["models"], f"h={h} {era}")
+
+
 class TestChatContract(unittest.TestCase):
     def test_whitelists_match_web(self):
         js = (WEB / "chat.js").read_text()
