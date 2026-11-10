@@ -140,35 +140,31 @@ function render() {
   try {
     EF = await fetch('data/econ_forecast.json').then(r => {if (!r.ok) throw Error(`HTTP ${r.status}`); return r.json();});
     $e('econfc-freshness').textContent =
-      `RESEARCH PROTOTYPE - testing used revised historical data with assumed publication delays, ` +
-      `so real-world accuracy will likely be worse than the tests suggest. Generated ${genDate()}.`;
+      `An experiment, not a promise: testing used revised history, so real accuracy will likely be worse. ` +
+      `Generated ${genDate()}.`;
     const gaps = EF.source_gaps || {};
     const gapNote = Object.keys(gaps).length
       ? ` Some input months were missing and were filled by carrying the last known value forward (never backward): ` +
         Object.entries(gaps).map(([k, v]) => `${k} ${v.join(', ')}${EF.gap_notes?.[k]?.[v[0]] ? ' - ' + EF.gap_notes[k][v[0]] : ''}`).join('; ') + '.' : '';
     $e('econfc-methods').innerHTML = `
-      <h3>How this forecast works, in plain terms</h3>
-      <p>It predicts the national monthly count of <strong>layoffs and discharges</strong> from the BLS JOLTS survey
-      (in thousands; that count includes firings and other discharges, not only layoffs for economic weakness - and it
-      is a different measure from the WARN notice archive below). For each horizon, one model looks at what was known
-      at the time: earlier layoffs, job openings and hires, the unemployment rate, payrolls, weekly hours worked, and
-      weekly unemployment claims.</p>
-      <p>To keep it honest, models were chosen using only 2024-2025 and then graded on 2026, which played no part in
-      any choice. A machine-learning model is used for a horizon only if it beat simple guesses (last month's value,
-      the same month last year, a 12-month average) in 2024-2025; where it didn't, the simple guess is the forecast and
-      the failed model's scores stay visible. Where a chosen model later lost on 2026, that is labeled above - models
-      are not re-picked after seeing the test. Automated checks rerun on every update to confirm no future information
-      leaks into a past prediction, and the whole update aborts if they fail.</p>
-      <h3>Why you should still not fully trust it</h3>
-      <p>Training used today's revised history with assumed publication delays, not the exact figures known on each
-      past date - so these tests flatter real-world skill. Only about two dozen choosing months and nine 2026 test
-      months exist per horizon, so the scores themselves are noisy. Adding the economic inputs has not been proven to
-      beat using past layoffs alone - that comparison is shown in the score table, and with this little data it is
-      inconclusive. Nothing here says the economy <em>caused</em> any layoff, and no accuracy level is promised beyond
-      the tests shown.${esc(gapNote)}</p>
+      <details><summary>How this forecast works, and why trust is limited</summary>
+      <p>It guesses the national monthly count of <strong>layoffs and discharges</strong> from the BLS JOLTS survey
+      (that count includes firings, and it is a different measure from the WARN notice archive below). For each
+      horizon, one model uses only what was known at the time: earlier layoffs, job openings and hires, the
+      unemployment rate, payrolls, weekly hours worked, and weekly unemployment claims.</p>
+      <p>Models were chosen using only 2024-2025 data and graded on 2026, which played no part in any choice. A
+      machine-learning model is used only where it beat simple guesses (last month's value, the same month last year,
+      a 12-month average); where it didn't, the simple guess is the forecast and the failed model's scores stay
+      visible. Models are never re-picked after seeing the 2026 test, and automated checks rerun on every update to
+      confirm no future information leaks into a past prediction.</p>
+      <p><strong>Why not to fully trust it:</strong> training used today's revised history, not the exact figures known
+      on each past date, so the tests flatter real-world skill. Only about two dozen choosing months and nine 2026
+      test months exist per horizon, so the scores are noisy. Using the economic inputs has not been proven to beat
+      past layoffs alone. Nothing here says the economy <em>caused</em> any layoff, and no accuracy level is promised
+      beyond the tests shown.${esc(gapNote)}</p>
       <p class="muted">Sources: ${EF.sources.map(s =>
         `<a href="${esc(s.series_page)}">${esc(s.id)}</a> (${esc(s.agency)}, through ${esc(s.latest.slice(0, 7))})`).join(' · ')}.
-        Code and data: <a href="https://github.com/Abezzam10/warn-dashboard">this repository</a>.</p>`;
+        Code and data: <a href="https://github.com/Abezzam10/warn-dashboard">this repository</a>.</p></details>`;
     render();
   } catch (e) {
     $e('econfc-freshness').textContent = `Economic forecast data could not load: ${e.message}. No numbers are substituted.`;
