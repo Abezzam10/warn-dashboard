@@ -28,6 +28,8 @@ $('filters').onsubmit=e=>{e.preventDefault();if($('start').value&&$('end').value
 try {const [n,m]=await Promise.all(['notices','meta'].map(x=>fetch(`data/${x}.json`).then(r=>{if(!r.ok)throw Error(`${x}: HTTP ${r.status}`);return r.json();})));notices=n.notices;meta=m;
  $('state').innerHTML='<option value="">All states</option>'+[...new Set(notices.map(n=>n.state))].sort().map(s=>`<option>${esc(s)}</option>`).join('');
  const age=Math.floor((Date.now()-Date.parse(meta.upstream.generated_at))/86400000);
- text('freshness',age>7?`Heads up: the notice archive below is frozen at ${meta.upstream.generated_at.slice(0,10)} - its source has not published anything new in ${age} days, so recent announcements are missing. The forecast and the California check use fresher official data.`:`Notice archive updated ${meta.upstream.generated_at.slice(0,10)}.`);
+ const [fy, fm, fday] = meta.upstream.generated_at.slice(0, 10).split('-').map(Number);
+ const fd = `${['January','February','March','April','May','June','July','August','September','October','November','December'][fm - 1]} ${fday}, ${fy}`;
+ text('freshness',age>7?`Heads up: the notice archive below is frozen at ${fd} - its source has not published anything new in ${age} days, so recent announcements are missing. The forecast and the California check use fresher official data.`:`Notice archive updated ${fd}.`);
  text('snapshot',`${fmt(notices.length)} notices / WARN Feed, CC BY 4.0`);apply(Object.fromEntries(new URLSearchParams(location.search)));
 }catch(e){text('freshness',`Published data could not load: ${e.message}. No sample numbers are substituted. See source code and raw data links.`);}

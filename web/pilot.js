@@ -135,8 +135,8 @@ async function init() {
     $('pilot-month-label').textContent = t.label;
     $('pilot-source').textContent = 'official EDD data';
     const verdict = flagCrossed(s.z)
-      ? `<strong>That is unusual</strong> compared with the same measure over the previous two years.`
-      : `That is <strong>within the range of the last two years</strong> - nothing unusual on this measure.`;
+      ? `Our check <strong>flagged this month as unusual</strong> on this measure compared with the previous two years.`
+      : `Our check <strong>did not flag this month as unusual</strong>. This month's count may still change as more notices arrive.`;
     $('pilot-stats').innerHTML = `
       <p class="big-answer">In <strong>${esc(t.label)}</strong>, California employers filed
         <strong>${fmt(s.rows)}</strong> WARN notices announcing about <strong>${fmt(s.employees)}</strong> job cuts.</p>

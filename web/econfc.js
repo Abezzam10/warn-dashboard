@@ -119,20 +119,13 @@ function render() {
   const isML = hz.published_model_kind === 'machine_learning';
   const l = hz.live;
   const hd = hz.holdout_2026;
-  let trust;
-  if (isML && hd.held_up) {
-    trust = 'In testing this guess beat simple ones and held up on 2026 - but that is only nine months of testing, so treat it as a rough signal, not a prediction to plan on.';
-  } else if (isML) {
-    trust = 'This guess beat simple ones in testing but then failed on 2026, which it had never seen - treat this forecast as unreliable.';
-  } else {
-    trust = `Machine-learning models were tested here and lost to simple guesses, so this forecast is just ${MODEL_SHORT[hz.published_model] || 'a simple guess'}. Treat it as a rough signal, not a prediction to plan on.`;
-  }
+  const trust = 'This forecast has not proved reliable. Don\'t use it to judge your own job risk.';
   $e('econfc-body').innerHTML = `
     <div class="pilot-controls"><span class="muted" style="align-self:center">How far ahead?</span>${[1,2,3,4,5,6].map(h =>
       `<button class="secondary" data-h="${h}" ${h === H ? 'aria-pressed="true" style="font-weight:700"' : ''}>${h} month${h > 1 ? 's' : ''}</button>`).join('')}</div>
     ${l ? `<p class="big-answer">Our best guess for <strong>${esc(mlabel(l.target_month))}</strong>: about
       <strong>${mil(l.point)}</strong> layoffs and firings across the US.</p>
-      <p>It could reasonably land anywhere between <strong>${mil(l.lower_80)}</strong> and <strong>${mil(l.upper_80)}</strong>.</p>
+      <p>Estimated range: <strong>${mil(l.lower_80)}</strong> to <strong>${mil(l.upper_80)}</strong>. The real count may fall outside it.</p>
       <p><strong>Can you trust it?</strong> ${esc(trust)}</p>` : '<p>No forecast is currently published for this horizon.</p>'}
     <details><summary>See the numbers, the testing, and how this works</summary>
     <p>${verdictChips(hz)}</p>
@@ -150,8 +143,8 @@ function render() {
   try {
     EF = await fetch('data/econ_forecast.json').then(r => {if (!r.ok) throw Error(`HTTP ${r.status}`); return r.json();});
     $e('econfc-freshness').textContent =
-      `An experiment, not a promise: testing used revised history, so real accuracy will likely be worse. ` +
-      `Generated ${genDate()}.`;
+      `An experiment, not a promise: tests used today's corrected historical numbers, not exactly what was known ` +
+      `then. Real-world accuracy is uncertain. Generated ${genDate()}.`;
     const gaps = EF.source_gaps || {};
     const gapNote = Object.keys(gaps).length
       ? ` Some input months were missing and were filled by carrying the last known value forward (never backward): ` +
