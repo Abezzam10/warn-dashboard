@@ -118,21 +118,31 @@ function render() {
   const hz = EF.horizons[String(H)];
   const isML = hz.published_model_kind === 'machine_learning';
   const l = hz.live;
+  const hd = hz.holdout_2026;
+  let trust;
+  if (isML && hd.held_up) {
+    trust = 'In testing this guess beat simple ones and held up on 2026 - but that is only nine months of testing, so treat it as a rough signal, not a prediction to plan on.';
+  } else if (isML) {
+    trust = 'This guess beat simple ones in testing but then failed on 2026, which it had never seen - treat this forecast as unreliable.';
+  } else {
+    trust = `Machine-learning models were tested here and lost to simple guesses, so this forecast is just ${MODEL_SHORT[hz.published_model] || 'a simple guess'}. Treat it as a rough signal, not a prediction to plan on.`;
+  }
   $e('econfc-body').innerHTML = `
-    <div class="pilot-controls">${[1,2,3,4,5,6].map(h =>
-      `<button class="secondary" data-h="${h}" ${h === H ? 'aria-pressed="true" style="font-weight:700"' : ''}>${h} mo ahead</button>`).join('')}</div>
-    <div class="stats">
-      ${l ? `<div class="stat"><strong>${mil(l.point)}</strong><span>expected layoffs and discharges in ${esc(mlabel(l.target_month))}, nationwide</span></div>
-      <div class="stat"><strong>${mil(l.lower_80)} - ${mil(l.upper_80)}</strong><span>uncertainty range - read the trust notes below before using it</span></div>` : ''}
-      <div class="stat"><strong>${isML ? 'ML model' : 'Simple baseline'}</strong><span>${esc(MODEL_SHORT[hz.published_model] || hz.published_model)} makes this forecast</span></div>
-    </div>
+    <div class="pilot-controls"><span class="muted" style="align-self:center">How far ahead?</span>${[1,2,3,4,5,6].map(h =>
+      `<button class="secondary" data-h="${h}" ${h === H ? 'aria-pressed="true" style="font-weight:700"' : ''}>${h} month${h > 1 ? 's' : ''}</button>`).join('')}</div>
+    ${l ? `<p class="big-answer">Our best guess for <strong>${esc(mlabel(l.target_month))}</strong>: about
+      <strong>${mil(l.point)}</strong> layoffs and firings across the US.</p>
+      <p>It could reasonably land anywhere between <strong>${mil(l.lower_80)}</strong> and <strong>${mil(l.upper_80)}</strong>.</p>
+      <p><strong>Can you trust it?</strong> ${esc(trust)}</p>` : '<p>No forecast is currently published for this horizon.</p>'}
+    <details><summary>See the numbers, the testing, and how this works</summary>
     <p>${verdictChips(hz)}</p>
     ${l ? `<p class="muted">Issued ${genDate()} from the latest government data (issue month ${esc(mlabel(EF.issue_month))};
       the most recent actually-reported layoffs month is ${esc(mlabel(EF.target.latest_observed_month))}).
-      This is a research prototype, not a validated forecast.</p>` : ''}
+      Made by: ${esc(MODEL_SHORT[hz.published_model] || hz.published_model)}. This is a research prototype, not a validated forecast.</p>` : ''}
     <div class="panel">${forecastChart(hz)}<p class="muted">The dashed line over 2024-2025 is the testing the model choice was based on - retrospective, not independent proof. Only the 2026 part was a truly unseen test.</p></div>
     <details><summary>Test scores for every model, including the losers</summary>${metricsTable(hz)}</details>
-    ${alertTable(hz)}`;
+    ${alertTable(hz)}
+    ${window.METHODS_HTML || ''}</details>`;
   document.querySelectorAll('[data-h]').forEach(b => b.onclick = () => {H = Number(b.dataset.h); render();});
 }
 
@@ -146,8 +156,8 @@ function render() {
     const gapNote = Object.keys(gaps).length
       ? ` Some input months were missing and were filled by carrying the last known value forward (never backward): ` +
         Object.entries(gaps).map(([k, v]) => `${k} ${v.join(', ')}${EF.gap_notes?.[k]?.[v[0]] ? ' - ' + EF.gap_notes[k][v[0]] : ''}`).join('; ') + '.' : '';
-    $e('econfc-methods').innerHTML = `
-      <details><summary>How this forecast works, and why trust is limited</summary>
+    window.METHODS_HTML = `
+      <h3>How this forecast works, and why trust is limited</h3>
       <p>It guesses the national monthly count of <strong>layoffs and discharges</strong> from the BLS JOLTS survey
       (that count includes firings, and it is a different measure from the WARN notice archive below). For each
       horizon, one model uses only what was known at the time: earlier layoffs, job openings and hires, the
@@ -164,7 +174,7 @@ function render() {
       beyond the tests shown.${esc(gapNote)}</p>
       <p class="muted">Sources: ${EF.sources.map(s =>
         `<a href="${esc(s.series_page)}">${esc(s.id)}</a> (${esc(s.agency)}, through ${esc(s.latest.slice(0, 7))})`).join(' · ')}.
-        Code and data: <a href="https://github.com/Abezzam10/warn-dashboard">this repository</a>.</p></details>`;
+        Code and data: <a href="https://github.com/Abezzam10/warn-dashboard">this repository</a>.</p>`;
     render();
   } catch (e) {
     $e('econfc-freshness').textContent = `Economic forecast data could not load: ${e.message}. No numbers are substituted.`;

@@ -122,7 +122,7 @@ async function init() {
   function drawControls() {
     $('pilot-months').innerHTML = months.map(m =>
       `<button type="button" data-m="${m}" class="${m === month ? 'active' : ''}">${esc(data.months[m].label)}</button>`).join('');
-    $('pilot-metrics').innerHTML = [['rows', 'Filings (rows)'], ['employees', 'Announced employees']]
+    $('pilot-metrics').innerHTML = [['rows', 'Notices filed'], ['employees', 'Announced job cuts']]
       .map(([k, l]) => `<button type="button" data-k="${k}" class="${k === metric ? 'active' : ''}">${l}</button>`).join('');
     $('pilot-months').querySelectorAll('button').forEach(b => b.onclick = () => { month = b.dataset.m; draw(); });
     $('pilot-metrics').querySelectorAll('button').forEach(b => b.onclick = () => { metric = b.dataset.k; draw(); });
@@ -134,17 +134,17 @@ async function init() {
     const s = monthStats(data, month, metric);
     $('pilot-month-label').textContent = t.label;
     $('pilot-source').textContent = 'official EDD data';
-    $('pilot-stats').innerHTML = [
-      [fmt(s.rows), 'WARN filings (one row per county per filing)'],
-      [fmt(s.distinctFilings), 'Distinct filings (counties merged)'],
-      [fmt(s.employees), 'Announced employees'],
-      [flagCrossed(s.z) ? 'FLAGGED' : 'Not flagged', `unusualness check: ${metric === 'rows' ? 'filings' : 'employees'} vs the previous two years (z = ${fmtZ(s.z)}; flags beyond +/-2, an exploratory line)`],
-    ].map(([n, l]) => `<div class="stat"><strong>${esc(n)}</strong><span>${esc(l)}</span></div>`).join('');
+    const verdict = flagCrossed(s.z)
+      ? `<strong>That is unusual</strong> compared with the same measure over the previous two years.`
+      : `That is <strong>within the range of the last two years</strong> - nothing unusual on this measure.`;
+    $('pilot-stats').innerHTML = `
+      <p class="big-answer">In <strong>${esc(t.label)}</strong>, California employers filed
+        <strong>${fmt(s.rows)}</strong> WARN notices announcing about <strong>${fmt(s.employees)}</strong> job cuts.</p>
+      <p>${verdict}</p>`;
     const rows = chartRows(data, metric, month);
     $('pilot-chart').innerHTML = chartSvg(rows, metric, s.windowMedian, t.label);
-    const w = data.reference_window;
     const notes = [
-      `Bars run Jul 2024 to Oct 2026. The dashed line is the typical month (median) of ${w.start} to ${w.end} - the same two-year window for every month shown. A month is flagged only when it sits far from that (z beyond +/-2: an exploratory line, with no guaranteed error rate).`,
+      `Bars run Jul 2024 to Oct 2026. The dashed line is the typical month (median) of 2024-07 to 2026-06 - the same two-year window for every month shown. A month is flagged only when it sits far from that (z beyond +/-2: an exploratory line, with no guaranteed error rate).`,
       `Same-month comparison: in 2023-25 this month of the year typically saw ${fmt(s.seasonalMedian)} filings (this year: ${fmt(s.rows)}).`,
       `November so far: ${fmt(data.partial.rows)} rows, ${fmt(data.partial.employees)} announced - partial month, not compared.`,
     ];
