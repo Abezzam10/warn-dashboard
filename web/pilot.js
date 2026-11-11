@@ -122,7 +122,7 @@ async function init() {
   function drawControls() {
     $('pilot-months').innerHTML = months.map(m =>
       `<button type="button" data-m="${m}" class="${m === month ? 'active' : ''}">${esc(data.months[m].label)}</button>`).join('');
-    $('pilot-metrics').innerHTML = [['rows', 'Notices filed'], ['employees', 'Announced job cuts']]
+    $('pilot-metrics').innerHTML = [['rows', 'Report entries (per county)'], ['employees', 'Announced positions']]
       .map(([k, l]) => `<button type="button" data-k="${k}" class="${k === metric ? 'active' : ''}">${l}</button>`).join('');
     $('pilot-months').querySelectorAll('button').forEach(b => b.onclick = () => { month = b.dataset.m; draw(); });
     $('pilot-metrics').querySelectorAll('button').forEach(b => b.onclick = () => { metric = b.dataset.k; draw(); });
@@ -139,11 +139,12 @@ async function init() {
       : `Our check <strong>did not flag this month as unusual</strong>. This month's count may still change as more notices arrive.`;
     $('pilot-stats').innerHTML = `
       <p class="big-answer">In <strong>${esc(t.label)}</strong>, California employers filed
-        <strong>${fmt(s.rows)}</strong> WARN notices announcing about <strong>${fmt(s.employees)}</strong> job cuts.</p>
+        <strong>${fmt(s.distinctFilings)}</strong> WARN notices announcing about <strong>${fmt(s.employees)}</strong> positions.</p>
       <p>${verdict}</p>`;
     const rows = chartRows(data, metric, month);
     $('pilot-chart').innerHTML = chartSvg(rows, metric, s.windowMedian, t.label);
     const notes = [
+      `Entries vs notices: this month's ${fmt(s.rows)} report entries come from ${fmt(s.distinctFilings)} distinct notices - an entry counts one filing per county it covers. Announced positions are what employers announced, not confirmed job losses.`,
       `Bars run Jul 2024 to Oct 2026. The dashed line is the typical month (median) of 2024-07 to 2026-06 - the same two-year window for every month shown. A month is flagged only when it sits far from that (z beyond +/-2: an exploratory line, with no guaranteed error rate).`,
       `Same-month comparison: in 2023-25 this month of the year typically saw ${fmt(s.seasonalMedian)} filings (this year: ${fmt(s.rows)}).`,
       `November so far: ${fmt(data.partial.rows)} rows, ${fmt(data.partial.employees)} announced - partial month, not compared.`,
